@@ -1,0 +1,98 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.kistiguard.client">
+
+    <!-- Permissions required for Device Lock & Anti-tampering -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+
+    <application
+        android:name=".KistiGuardApp"
+        android:allowBackup="false"
+        android:icon="@android:drawable/ic_lock_idle_lock"
+        android:label="KistiGuard Protection"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.KistiGuard">
+
+        <!-- Main Launcher Screen -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Fullscreen Undismissable Lock Screen -->
+        <activity
+            android:name=".ui.LockScreenActivity"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:noHistory="false"
+            android:screenOrientation="portrait"
+            android:showOnLockScreen="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:windowSoftInputMode="adjustNothing" />
+
+        <!-- Interactive Promotional / Shop Advertisement Popup Activity -->
+        <activity
+            android:name=".ui.PromoPopupActivity"
+            android:theme="@style/Theme.KistiGuard.Dialog"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:exported="false" />
+
+        <!-- Device Administration Policy Receiver -->
+        <receiver
+            android:name=".receiver.KistiDeviceAdminReceiver"
+            android:description="@string/device_admin_description"
+            android:label="@string/device_admin_label"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_policies" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLE_REQUESTED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Boot Completed Receiver (Re-activates lock on phone restart) -->
+        <receiver
+            android:name=".receiver.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Firebase Push Receiver for remote LOCK/UNLOCK commands -->
+        <service
+            android:name=".service.KistiFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Heartbeat Foreground Service -->
+        <service
+            android:name=".service.HeartbeatService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
+    </application>
+</manifest>

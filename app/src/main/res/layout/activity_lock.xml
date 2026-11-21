@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0f172a"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="28dp">
+
+    <!-- Red Shield Warning Badge -->
+    <TextView
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:background="#dc2626"
+        android:gravity="center"
+        android:text="🔒"
+        android:textSize="36sp"
+        android:textColor="#ffffff"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Main Alert Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ডিভাইসটি লক করা হয়েছে!"
+        android:textColor="#ef4444"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Custom Lock Screen Banner / QR Notice Image -->
+    <ImageView
+        android:id="@+id/ivLockBanner"
+        android:layout_width="match_parent"
+        android:layout_height="170dp"
+        android:scaleType="fitCenter"
+        android:adjustViewBounds="true"
+        android:visibility="gone"
+        android:background="#1e293b"
+        android:padding="6dp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Reason / Warning Message -->
+    <TextView
+        android:id="@+id/tvLockMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="আপনার কিস্তি বকেয়া রয়েছে! অবিলম্বে দোকানে এসে কিস্তি পরিশোধ করে ফোন আনলক করুন।"
+        android:textColor="#cbd5e1"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:lineSpacingExtra="4dp"
+        android:layout_marginBottom="32dp" />
+
+    <!-- Shop Information Card -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#1e293b"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:layout_marginBottom="28dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="যোগাযোগের তথ্য:"
+            android:textColor="#94a3b8"
+            android:textSize="12sp"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:id="@+id/tvShopName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="দোকানের নাম"
+            android:textColor="#ffffff"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/tvShopPhone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="দোকানের মোবাইল: 01700000000"
+            android:textColor="#38bdf8"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- Dedicated Shop Call Only Button -->
+    <Button
+        android:id="@+id/btnCallShop"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="📞 দোকানীকে কল করুন"
+        android:textColor="#ffffff"
+        android:backgroundTint="#2563eb"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:layout_marginBottom="6dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="লক অবস্থায় শুধুমাত্র দোকানে কল করার অনুমতি রয়েছে"
+        android:textColor="#94a3b8"
+        android:textSize="11sp"
+        android:layout_marginBottom="20dp" />
+
+    <!-- Offline Master Unlock Code Button -->
+    <Button
+        android:id="@+id/btnOfflineUnlock"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:text="🔑 অফলাইন আনলক কোড দিন"
+        android:textColor="#fcd34d"
+        android:backgroundTint="#1e293b"
+        android:textSize="13sp" />
+
+</LinearLayout>

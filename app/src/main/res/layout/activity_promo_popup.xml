@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#99000000"
+    android:padding="20dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:background="#FFFFFF"
+        android:elevation="12dp">
+
+        <!-- Top Header Bar with Title and Close 'X' Button -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#0F172A"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp">
+
+            <TextView
+                android:id="@+id/tvPromoShopName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:layout_toStartOf="@id/btnClosePromo"
+                android:text="📣 দোকানের বিশেষ অফার / বিজ্ঞাপন"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:ellipsize="end"
+                android:singleLine="true" />
+
+            <!-- Close Cross Button (User requested: পপআপ এর উপরে একটা ক্রস বাটন থাকবে, সেটা দিয়ে কেটে দিবে) -->
+            <TextView
+                android:id="@+id/btnClosePromo"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:background="#1E293B"
+                android:gravity="center"
+                android:text="✕"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
+
+        <!-- Banner Image -->
+        <ImageView
+            android:id="@+id/ivPromoBanner"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:scaleType="centerCrop"
+            android:background="#E2E8F0"
+            android:contentDescription="Promotional Banner" />
+
+        <!-- Message Body -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/tvPromoTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ধামাকা অফার!"
+                android:textColor="#0F172A"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:id="@+id/tvPromoMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="সম্মানিত গ্রাহক, নিয়মিত কিস্তি পরিশোধ করুন এবং আকর্ষণীয় ক্যাশব্যাক ও উপহার উপভোগ করুন।"
+                android:textColor="#475569"
+                android:textSize="12sp"
+                android:lineSpacingExtra="3dp" />
+
+            <!-- Call Dealer Button -->
+            <Button
+                android:id="@+id/btnPromoCall"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="14dp"
+                android:background="#2563EB"
+                android:text="📞 দোকানে কল করুন"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <!-- Auto-Dismiss Countdown Indicator (User requested: অথবা ৫ সেকেন্ড পর অটো চলে যাবে) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="10dp">
+
+                <TextView
+                    android:id="@+id/tvCountdownText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⏱️ এই বিজ্ঞাপনটি ৫ সেকেন্ড পর স্বয়ংক্রিয়ভাবে বন্ধ হবে..."
+                    android:textColor="#94A3B8"
+                    android:textSize="10sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

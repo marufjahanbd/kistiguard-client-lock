@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">KistiGuard Protection</string>
+    <string name="device_admin_label">KistiGuard EMI Security</string>
+    <string name="device_admin_description">Protects your installment device and manages EMI payment security.</string>
+</resources>

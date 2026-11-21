@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "403262391432",
+    "project_id": "kistiguard-d026d",
+    "storage_bucket": "kistiguard-d026d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:403262391432:android:4673fa789479d33621cb3d",
+        "android_client_info": {
+          "package_name": "com.kistiguard.client"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBcsNlbsvWZUMnrcp7qfR6hx27LTXdwUGM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
