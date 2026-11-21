@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0f172a"
+    android:gravity="center">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <!-- Shield Icon Badge -->
+        <TextView
+            android:layout_width="88dp"
+            android:layout_height="88dp"
+            android:background="#2563eb"
+            android:gravity="center"
+            android:text="🛡️"
+            android:textSize="44sp"
+            android:textColor="#ffffff"
+            android:layout_marginBottom="20dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="KistiGuard Dealer Hub"
+            android:textColor="#ffffff"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="স্মার্ট কিস্তি ও ডিভাইস লকিং সিস্টেম"
+            android:textColor="#94a3b8"
+            android:textSize="13sp"
+            android:layout_marginBottom="36dp" />
+
+        <ProgressBar
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:indeterminateTint="#38bdf8" />
+    </LinearLayout>
+
+</RelativeLayout>

@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">KistiGuard Dealer Hub</string>
+    <string name="app_tagline">স্মার্ট কিস্তি ও ডিভাইস লকিং হাব</string>
+    <string name="no_internet">ইন্টারনেট সংযোগ পাওয়া যায়নি</string>
+    <string name="check_internet">দয়া করে আপনার ইন্টারনেট সংযোগ চেক করে পুনরায় চেষ্টা করুন।</string>
+    <string name="retry">পুনরায় চেষ্টা করুন</string>
+</resources>

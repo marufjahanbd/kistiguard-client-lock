@@ -1,4 +1,4 @@
-name: Build KistiGuard Client APK
+name: Build KistiGuard Apps (Client Lock & Dealer Hub)
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build Android APK
+    name: Build Android APKs
     runs-on: ubuntu-latest
 
     steps:
@@ -26,16 +26,20 @@ jobs:
         with:
           gradle-version: '8.2'
 
-      - name: Build Debug APK
+      - name: Build Debug APKs
         run: |
-          if [ -d "android-client-lock" ]; then
-            cd android-client-lock
-          fi
           gradle assembleDebug --stacktrace
+          mkdir -p release-apks
+          if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp app/build/outputs/apk/debug/app-debug.apk release-apks/KistiGuard-Customer-Lock.apk
+          fi
+          if [ -f dealer/build/outputs/apk/debug/dealer-debug.apk ]; then
+            cp dealer/build/outputs/apk/debug/dealer-debug.apk release-apks/KistiGuard-Dealer-Hub.apk
+          fi
 
-      - name: Upload APK Artifact
+      - name: Upload APKs Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: KistiGuard-Client-APK
-          path: '**/build/outputs/apk/debug/*.apk'
+          name: KistiGuard-APKs-Customer-and-Dealer
+          path: release-apks/*.apk
           retention-days: 30
