@@ -3,14 +3,18 @@ package com.kistiguard.dealer;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.View;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -25,15 +29,22 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
+import java.util.UUID;
+import java.util.concurrent.Executor;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String TARGET_URL = "https://kistiguard.bartamanict.com/dealer";
     private static final int FILE_CHOOSER_REQUEST_CODE = 2001;
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 1001;
+    private static final String PREFS_NAME = "kistiguard_dealer_prefs";
+    private static final String KEY_BIO_TOKEN = "device_bio_token";
 
     private WebView webView;
     private SwipeRefreshLayout swipeRefresh;
@@ -94,9 +105,14 @@ public class MainActivity extends AppCompatActivity {
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
-        settings.setUseWideViewPort(false);
-        settings.setLoadWithOverviewMode(false);
-        settings.setSupportZoom(false);
+
+        // Responsive Mobile Viewport Fix (Fixes bKash / SSLCOMMERZ full-screen display)
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NORMAL);
+        webView.setBackgroundColor(0xFFFFFFFF);
+
+        settings.setSupportZoom(true);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
@@ -108,6 +124,9 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             cookieManager.setAcceptThirdPartyCookies(webView, true);
         }
+
+        // Native Android Biometric Javascript Interface
+        webView.addJavascriptInterface(new BiometricBridge(), "AndroidBiometric");
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -208,6 +227,90 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    /**
+     * Native Android Biometric Prompt Bridge exposed to WebView JavaScript as window.AndroidBiometric
+     */
+    public class BiometricBridge {
+
+        @JavascriptInterface
+        public boolean isAvailable() {
+            try {
+                BiometricManager biometricManager = BiometricManager.from(MainActivity.this);
+                int canAuth = biometricManager.canAuthenticate(
+                        BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.BIOMETRIC_WEAK
+                );
+                return canAuth == BiometricManager.BIOMETRIC_SUCCESS;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public void enroll() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    showNativeBiometricPrompt("বায়োমেট্রিক যোগ করুন", "আপনার ফোনের ফিঙ্গারপ্রিন্ট স্পর্শ করে একাউন্ট লিংক করুন", true);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void authenticate() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    showNativeBiometricPrompt("কিসতিগার্ড লগইন", "ফিঙ্গারপ্রিন্ট স্পর্শ করে একাউন্টে প্রবেশ করুন", false);
+                }
+            });
+        }
+    }
+
+    private void showNativeBiometricPrompt(String title, String subtitle, final boolean isEnrollment) {
+        Executor executor = ContextCompat.getMainExecutor(this);
+        BiometricPrompt biometricPrompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                super.onAuthenticationError(errorCode, errString);
+                String msg = errString.toString();
+                webView.evaluateJavascript("if(window.onAndroidBiometricError) window.onAndroidBiometricError('" + msg.replace("'", "\\'") + "');", null);
+            }
+
+            @Override
+            public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                super.onAuthenticationSucceeded(result);
+
+                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                String bioToken = prefs.getString(KEY_BIO_TOKEN, null);
+                if (bioToken == null || isEnrollment) {
+                    String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+                    bioToken = "bio_native_" + (androidId != null ? androidId : UUID.randomUUID().toString().replace("-", ""));
+                    prefs.edit().putString(KEY_BIO_TOKEN, bioToken).apply();
+                }
+
+                if (isEnrollment) {
+                    webView.evaluateJavascript("if(window.onAndroidBiometricEnrolled) window.onAndroidBiometricEnrolled('" + bioToken + "');", null);
+                } else {
+                    webView.evaluateJavascript("if(window.onAndroidBiometricLogin) window.onAndroidBiometricLogin('" + bioToken + "');", null);
+                }
+            }
+
+            @Override
+            public void onAuthenticationFailed() {
+                super.onAuthenticationFailed();
+            }
+        });
+
+        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle(title)
+                .setSubtitle(subtitle)
+                .setNegativeButtonText("বাতিল")
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.BIOMETRIC_WEAK)
+                .build();
+
+        biometricPrompt.authenticate(promptInfo);
     }
 
     @Override
