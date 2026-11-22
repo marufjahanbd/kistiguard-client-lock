@@ -19,30 +19,23 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept Android Licenses
-        run: |
-          yes | sdkmanager --licenses || true
+          cache: 'gradle'
 
       - name: Set up Gradle 8.2
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.2'
 
       - name: Build Debug APKs
         run: |
-          gradle assembleDebug --stacktrace --no-daemon
-
-      - name: Prepare APKs for Upload
-        if: always()
-        run: |
+          gradle assembleDebug --stacktrace
           mkdir -p release-apks
-          find app/build/outputs/apk/ -name "*.apk" -type f -exec cp {} release-apks/KistiGuard-Customer-Lock.apk \; 2>/dev/null || true
-          find dealer/build/outputs/apk/ -name "*.apk" -type f -exec cp {} release-apks/KistiGuard-Dealer-Hub.apk \; 2>/dev/null || true
-          ls -la release-apks/
+          if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp app/build/outputs/apk/debug/app-debug.apk release-apks/KistiGuard-Customer-Lock.apk
+          fi
+          if [ -f dealer/build/outputs/apk/debug/dealer-debug.apk ]; then
+            cp dealer/build/outputs/apk/debug/dealer-debug.apk release-apks/KistiGuard-Dealer-Hub.apk
+          fi
 
       - name: Upload APKs Artifact
         uses: actions/upload-artifact@v4
