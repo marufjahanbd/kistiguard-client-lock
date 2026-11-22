@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0f172a"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:padding="24dp">
+
+        <!-- Header: Logo & Title -->
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@mipmap/ic_launcher"
+            android:scaleType="fitCenter"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="KistiGuard Protection"
+            android:textColor="#ffffff"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="স্মার্ট কিস্তি নিরাপত্তা ও ডিভাইস এনরোলমেন্ট"
+            android:textColor="#94a3b8"
+            android:textSize="12sp"
+            android:layout_marginBottom="20dp" />
+
+        <!-- White Card with Pairing QR Code -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/bg_qr_card"
+            android:padding="20dp"
+            android:elevation="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📲 ডিলার অটো-ফিল কিউআর কোড"
+                android:textColor="#0f172a"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ডিলার অ্যাপের 'কাস্টমার ফোন অটো-ফিল' দিয়ে স্ক্যান করুন"
+                android:textColor="#64748b"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:layout_marginBottom="14dp" />
+
+            <!-- QR Code Image -->
+            <ImageView
+                android:id="@+id/ivDeviceQr"
+                android:layout_width="220dp"
+                android:layout_height="220dp"
+                android:background="#ffffff"
+                android:scaleType="fitCenter"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Device Hardware Snapshot Box -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#f1f5f9"
+                android:padding="12dp">
+
+                <TextView
+                    android:id="@+id/tvDeviceBrandModel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="মডেল: লোড হচ্ছে..."
+                    android:textColor="#1e293b"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="3dp" />
+
+                <TextView
+                    android:id="@+id/tvDeviceId"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ID / IMEI: লোড হচ্ছে..."
+                    android:textColor="#475569"
+                    android:textSize="11sp"
+                    android:fontFamily="monospace"
+                    android:layout_marginBottom="3dp" />
+
+                <TextView
+                    android:id="@+id/tvDeviceOs"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="অ্যান্ড্রয়েড ভার্সন: লোড হচ্ছে..."
+                    android:textColor="#475569"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Admin Permission Box -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="20dp"
+            android:padding="16dp"
+            android:background="#1e293b">
+
+            <TextView
+                android:id="@+id/tvAdminStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="অ্যাডমিন স্ট্যাটাস: চেক হচ্ছে..."
+                android:textColor="#f8fafc"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
+
+            <Button
+                android:id="@+id/btnActivateAdmin"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:text="🛡️ ডিভাইস অ্যাডমিন পারমিশন দিন"
+                android:textColor="#ffffff"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:backgroundTint="#2563eb" />
+
+            <Button
+                android:id="@+id/btnHideAndProtect"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:text="🔒 প্রোটেকশন চালু ও আইকন হাইড করুন"
+                android:textColor="#ffffff"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="#059669" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="KistiGuard Security Engine • Anti-Tamper Protected"
+            android:textColor="#475569"
+            android:textSize="10sp"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="16dp" />
+
+    </LinearLayout>
+</ScrollView>

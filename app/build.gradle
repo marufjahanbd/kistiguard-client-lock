@@ -45,4 +45,7 @@ dependencies {
 
     // HTTP Networking for KistiGuard backend sync
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+    // ZXing for Device Enrollment & Pairing QR Code Generation
+    implementation 'com.google.zxing:core:3.5.3'
 }
