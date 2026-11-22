@@ -15,8 +15,9 @@
     <application
         android:name=".KistiGuardApp"
         android:allowBackup="false"
-        android:icon="@drawable/app_icon"
+        android:icon="@mipmap/ic_launcher"
         android:label="KistiGuard Protection"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.KistiGuard">
 
