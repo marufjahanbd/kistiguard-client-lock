@@ -11,15 +11,12 @@
         android:orientation="vertical"
         android:gravity="center">
 
-        <!-- Shield Icon Badge -->
-        <TextView
+        <!-- 3D Brand Logo -->
+        <ImageView
             android:layout_width="88dp"
             android:layout_height="88dp"
-            android:background="#2563eb"
-            android:gravity="center"
-            android:text="🛡️"
-            android:textSize="44sp"
-            android:textColor="#ffffff"
+            android:src="@drawable/app_icon"
+            android:scaleType="fitCenter"
             android:layout_marginBottom="20dp" />
 
         <TextView
