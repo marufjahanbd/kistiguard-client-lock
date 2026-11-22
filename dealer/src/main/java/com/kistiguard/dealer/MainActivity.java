@@ -2,6 +2,7 @@ package com.kistiguard.dealer;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -11,9 +12,13 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.Settings;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.webkit.CookieManager;
+import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
@@ -24,6 +29,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -106,10 +112,17 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
 
-        // Responsive Mobile Viewport Fix (Fixes bKash / SSLCOMMERZ full-screen display)
+        // =====================================================================
+        // FULLSCREEN PAYMENT GATEWAY FIX (bKash / SSLCOMMERZ)
+        // setUseWideViewPort(true) + setLoadWithOverviewMode(true) ensures the
+        // payment page fills the entire WebView without grey side-bars.
+        // setSupportMultipleWindows(true) allows bKash window.open() popup to work.
+        // =====================================================================
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(true);
         settings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NORMAL);
+        settings.setSupportMultipleWindows(true);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
         webView.setBackgroundColor(0xFFFFFFFF);
 
         settings.setSupportZoom(true);
@@ -128,6 +141,21 @@ public class MainActivity extends AppCompatActivity {
         // Native Android Biometric Javascript Interface
         webView.addJavascriptInterface(new BiometricBridge(), "AndroidBiometric");
 
+        // =====================================================================
+        // APK DOWNLOAD FIX
+        // Android WebView cannot download files on its own. setDownloadListener
+        // intercepts <a href="...apk" download> clicks and routes them through
+        // the system DownloadManager, which saves the file to Downloads/ and
+        // shows a notification when complete.
+        // =====================================================================
+        webView.setDownloadListener(new DownloadListener() {
+            @Override
+            public void onDownloadStart(String url, String userAgent,
+                                        String contentDisposition, String mimeType, long contentLength) {
+                handleApkDownload(url);
+            }
+        });
+
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
@@ -140,14 +168,15 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            // Camera / Microphone permission request from HTML5 (getUserMedia / html5-qrcode)
+            // Camera / Microphone permission from HTML5 (html5-qrcode / getUserMedia)
             @Override
             public void onPermissionRequest(final PermissionRequest request) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                            if (ContextCompat.checkSelfPermission(MainActivity.this,
+                                    Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                                 request.grant(request.getResources());
                             } else {
                                 pendingPermissionRequest = request;
@@ -160,29 +189,121 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
+            // =====================================================================
+            // PAYMENT POPUP FULLSCREEN FIX
+            // bKash and SSLCOMMERZ open their confirmation pages via window.open()
+            // or target="_blank". Without onCreateWindow the popup is silently
+            // dropped. Here we show it fullscreen inside a FrameLayout overlay.
+            // =====================================================================
+            @Override
+            public boolean onCreateWindow(WebView view, boolean isDialog,
+                                          boolean isUserGesture, android.os.Message resultMsg) {
+                WebView popupWebView = new WebView(MainActivity.this);
+                WebSettings ps = popupWebView.getSettings();
+                ps.setJavaScriptEnabled(true);
+                ps.setDomStorageEnabled(true);
+                ps.setUseWideViewPort(true);
+                ps.setLoadWithOverviewMode(true);
+                ps.setSupportZoom(false);
+                ps.setBuiltInZoomControls(false);
+                CookieManager.getInstance().setAcceptCookie(true);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    CookieManager.getInstance().setAcceptThirdPartyCookies(popupWebView, true);
+                }
+                popupWebView.setBackgroundColor(0xFFFFFFFF);
+
+                popupWebView.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView v, String url) {
+                        return handleSpecialUrls(url);
+                    }
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest req) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            return handleSpecialUrls(req.getUrl().toString());
+                        }
+                        return false;
+                    }
+                });
+
+                // Full-screen container
+                FrameLayout container = new FrameLayout(MainActivity.this);
+                container.setBackgroundColor(0xFFFFFFFF);
+                FrameLayout.LayoutParams fill = new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT);
+                container.addView(popupWebView, fill);
+
+                // Close / back button at bottom-left
+                Button closeBtn = new Button(MainActivity.this);
+                closeBtn.setText("← ফিরে যান");
+                closeBtn.setTextColor(0xFFFFFFFF);
+                closeBtn.setBackgroundColor(0xCC1e293b);
+                closeBtn.setTextSize(13f);
+                FrameLayout.LayoutParams closeBtnParams = new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT);
+                closeBtnParams.gravity = Gravity.BOTTOM | Gravity.START;
+                closeBtnParams.leftMargin = 16;
+                closeBtnParams.bottomMargin = 24;
+                container.addView(closeBtn, closeBtnParams);
+
+                closeBtn.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        // Restore normal view
+                        setContentView(R.layout.activity_main);
+                        webView = findViewById(R.id.webView);
+                        swipeRefresh = findViewById(R.id.swipeRefresh);
+                        progressBar = findViewById(R.id.progressBar);
+                        layoutError = findViewById(R.id.layoutError);
+                        btnRetry = findViewById(R.id.btnRetry);
+                        swipeRefresh.setColorSchemeColors(0xFF2563EB);
+                        swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+                            @Override
+                            public void onRefresh() { webView.reload(); }
+                        });
+                        btnRetry.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View vv) {
+                                layoutError.setVisibility(View.GONE);
+                                webView.setVisibility(View.VISIBLE);
+                                webView.reload();
+                            }
+                        });
+                        initWebView();
+                        webView.loadUrl(TARGET_URL);
+                    }
+                });
+
+                setContentView(container);
+
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(popupWebView);
+                resultMsg.sendToTarget();
+                return true;
+            }
+
             // File Chooser for Image/Document Uploads
             @Override
-            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback,
-                                            FileChooserParams fileChooserParams) {
-                if (MainActivity.this.filePathCallback != null) {
-                    MainActivity.this.filePathCallback.onReceiveValue(null);
-                }
-                MainActivity.this.filePathCallback = filePathCallback;
+            public boolean onShowFileChooser(WebView wv, ValueCallback<Uri[]> cb,
+                                             FileChooserParams params) {
+                if (filePathCallback != null) filePathCallback.onReceiveValue(null);
+                filePathCallback = cb;
 
-                Intent intent = null;
+                Intent intent;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    intent = fileChooserParams.createIntent();
+                    intent = params.createIntent();
                 } else {
                     intent = new Intent(Intent.ACTION_GET_CONTENT);
                     intent.addCategory(Intent.CATEGORY_OPENABLE);
                     intent.setType("*/*");
                 }
-
                 try {
                     startActivityForResult(intent, FILE_CHOOSER_REQUEST_CODE);
                 } catch (ActivityNotFoundException e) {
-                    MainActivity.this.filePathCallback = null;
-                    Toast.makeText(MainActivity.this, "ফাইল সিলেক্টর খুঁজে পাওয়া যায়নি", Toast.LENGTH_SHORT).show();
+                    filePathCallback = null;
+                    Toast.makeText(MainActivity.this, "ফাইল সিলেক্টর খুঁজে পাওয়া যায়নি", Toast.LENGTH_SHORT).show();
                     return false;
                 }
                 return true;
@@ -230,21 +351,49 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Native Android Biometric Prompt Bridge exposed to WebView JavaScript as window.AndroidBiometric
+     * Routes APK download URLs to Android DownloadManager.
+     * WebView cannot download files on its own — DownloadManager handles it
+     * natively, shows a system notification, and saves to Downloads/.
+     */
+    private void handleApkDownload(String url) {
+        try {
+            Toast.makeText(this, "APK ডাউনলোড শুরু হচ্ছে...", Toast.LENGTH_SHORT).show();
+            DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
+            req.setTitle("KistiGuard Client APK");
+            req.setDescription("ডাউনলোড হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...");
+            req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "kistiguard-client.apk");
+            req.setMimeType("application/vnd.android.package-archive");
+            String cookie = CookieManager.getInstance().getCookie(url);
+            if (cookie != null) req.addRequestHeader("Cookie", cookie);
+            req.addRequestHeader("User-Agent", "Mozilla/5.0 (Android; Mobile)");
+            DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            if (dm != null) {
+                dm.enqueue(req);
+                Toast.makeText(this, "✓ ডাউনলোড শুরু হয়েছে! নোটিফিকেশন বারে দেখুন।", Toast.LENGTH_LONG).show();
+            }
+        } catch (Exception e) {
+            // Fallback to external browser
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+            } catch (Exception ignored) {}
+        }
+    }
+
+    /**
+     * Native Android Biometric Prompt Bridge — exposed to WebView JS as window.AndroidBiometric
      */
     public class BiometricBridge {
 
         @JavascriptInterface
         public boolean isAvailable() {
             try {
-                BiometricManager biometricManager = BiometricManager.from(MainActivity.this);
-                int canAuth = biometricManager.canAuthenticate(
-                        BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.BIOMETRIC_WEAK
-                );
-                return canAuth == BiometricManager.BIOMETRIC_SUCCESS;
-            } catch (Exception e) {
-                return false;
-            }
+                BiometricManager bm = BiometricManager.from(MainActivity.this);
+                int can = bm.canAuthenticate(
+                        BiometricManager.Authenticators.BIOMETRIC_STRONG |
+                        BiometricManager.Authenticators.BIOMETRIC_WEAK);
+                return can == BiometricManager.BIOMETRIC_SUCCESS;
+            } catch (Exception e) { return false; }
         }
 
         @JavascriptInterface
@@ -252,7 +401,10 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    showNativeBiometricPrompt("বায়োমেট্রিক যোগ করুন", "আপনার ফোনের ফিঙ্গারপ্রিন্ট স্পর্শ করে একাউন্ট লিংক করুন", true);
+                    showNativeBiometricPrompt(
+                            "বায়োমেট্রিক যোগ করুন",
+                            "আপনার ফোনের ফিঙ্গারপ্রিন্ট স্পর্শ করে একাউন্ট লিংক করুন",
+                            true);
                 }
             });
         }
@@ -262,7 +414,10 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    showNativeBiometricPrompt("কিসতিগার্ড লগইন", "ফিঙ্গারপ্রিন্ট স্পর্শ করে একাউন্টে প্রবেশ করুন", false);
+                    showNativeBiometricPrompt(
+                            "কিসতিগার্ড লগইন",
+                            "ফিঙ্গারপ্রিন্ট স্পর্শ করে একাউন্টে প্রবেশ করুন",
+                            false);
                 }
             });
         }
@@ -270,47 +425,85 @@ public class MainActivity extends AppCompatActivity {
 
     private void showNativeBiometricPrompt(String title, String subtitle, final boolean isEnrollment) {
         Executor executor = ContextCompat.getMainExecutor(this);
-        BiometricPrompt biometricPrompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {
-            @Override
-            public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
-                super.onAuthenticationError(errorCode, errString);
-                String msg = errString.toString();
-                webView.evaluateJavascript("if(window.onAndroidBiometricError) window.onAndroidBiometricError('" + msg.replace("'", "\\'") + "');", null);
-            }
+        BiometricPrompt prompt = new BiometricPrompt(this, executor,
+                new BiometricPrompt.AuthenticationCallback() {
+                    @Override
+                    public void onAuthenticationError(int code, @NonNull CharSequence err) {
+                        super.onAuthenticationError(code, err);
+                        String msg = err.toString().replace("'", "\\'");
+                        webView.evaluateJavascript(
+                                "if(window.onAndroidBiometricError) window.onAndroidBiometricError('" + msg + "');", null);
+                    }
 
-            @Override
-            public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
-                super.onAuthenticationSucceeded(result);
+                    @Override
+                    public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                        super.onAuthenticationSucceeded(result);
+                        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                        String bioToken = prefs.getString(KEY_BIO_TOKEN, null);
+                        if (bioToken == null || isEnrollment) {
+                            String aid = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+                            bioToken = "bio_native_" + (aid != null ? aid : UUID.randomUUID().toString().replace("-", ""));
+                            prefs.edit().putString(KEY_BIO_TOKEN, bioToken).apply();
+                        }
+                        final String token = bioToken;
+                        if (isEnrollment) {
+                            webView.evaluateJavascript(
+                                    "if(window.onAndroidBiometricEnrolled) window.onAndroidBiometricEnrolled('" + token + "');", null);
+                        } else {
+                            webView.evaluateJavascript(
+                                    "if(window.onAndroidBiometricLogin) window.onAndroidBiometricLogin('" + token + "');", null);
+                        }
+                    }
 
-                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                String bioToken = prefs.getString(KEY_BIO_TOKEN, null);
-                if (bioToken == null || isEnrollment) {
-                    String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-                    bioToken = "bio_native_" + (androidId != null ? androidId : UUID.randomUUID().toString().replace("-", ""));
-                    prefs.edit().putString(KEY_BIO_TOKEN, bioToken).apply();
-                }
+                    @Override
+                    public void onAuthenticationFailed() {
+                        super.onAuthenticationFailed();
+                    }
+                });
 
-                if (isEnrollment) {
-                    webView.evaluateJavascript("if(window.onAndroidBiometricEnrolled) window.onAndroidBiometricEnrolled('" + bioToken + "');", null);
-                } else {
-                    webView.evaluateJavascript("if(window.onAndroidBiometricLogin) window.onAndroidBiometricLogin('" + bioToken + "');", null);
-                }
-            }
-
-            @Override
-            public void onAuthenticationFailed() {
-                super.onAuthenticationFailed();
-            }
-        });
-
-        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+        BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
                 .setTitle(title)
                 .setSubtitle(subtitle)
                 .setNegativeButtonText("বাতিল")
-                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.BIOMETRIC_WEAK)
+                .setAllowedAuthenticators(
+                        BiometricManager.Authenticators.BIOMETRIC_STRONG |
+                        BiometricManager.Authenticators.BIOMETRIC_WEAK)
                 .build();
+        prompt.authenticate(info);
+    }
 
-        biometricPrompt.authenticate(promptInfo);
+    private boolean handleSpecialUrls(String url) {
+        if (url == null) return false;
+
+        // Phone dialer
+        if (url.startsWith("tel:")) {
+            startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse(url)));
+            return true;
+        }
+
+        // WhatsApp / Mail
+        if (url.startsWith("mailto:") || url.contains("wa.me") || url.startsWith("whatsapp:")) {
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                return true;
+            } catch (Exception ignored) {}
+        }
+
+        // APK download — route to DownloadManager
+        if (url.endsWith(".apk") || url.contains("kistiguard-client.apk")
+                || url.contains("/download/kistiguard") || url.contains("/downloads/kistiguard")) {
+            handleApkDownload(url);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void showOfflineError() {
+        swipeRefresh.setRefreshing(false);
+        progressBar.setVisibility(View.GONE);
+        webView.setVisibility(View.GONE);
+        layoutError.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -327,38 +520,9 @@ public class MainActivity extends AppCompatActivity {
                     pendingPermissionRequest.deny();
                     pendingPermissionRequest = null;
                 }
-                Toast.makeText(this, "ক্যামেরা ব্যবহারের জন্য পারমিশন প্রয়োজন", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "ক্যামেরা ব্যবহারের জন্য পারমিশন প্রয়োজন", Toast.LENGTH_SHORT).show();
             }
         }
-    }
-
-    private boolean handleSpecialUrls(String url) {
-        if (url == null) return false;
-
-        // Dial phone numbers directly
-        if (url.startsWith("tel:")) {
-            Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse(url));
-            startActivity(intent);
-            return true;
-        }
-
-        // External WhatsApp or Mail
-        if (url.startsWith("mailto:") || url.contains("wa.me") || url.startsWith("whatsapp:")) {
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                startActivity(intent);
-                return true;
-            } catch (Exception ignored) {}
-        }
-
-        return false;
-    }
-
-    private void showOfflineError() {
-        swipeRefresh.setRefreshing(false);
-        progressBar.setVisibility(View.GONE);
-        webView.setVisibility(View.GONE);
-        layoutError.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -368,7 +532,6 @@ public class MainActivity extends AppCompatActivity {
                 super.onActivityResult(requestCode, resultCode, data);
                 return;
             }
-
             Uri[] results = null;
             if (resultCode == RESULT_OK && data != null) {
                 if (data.getData() != null) {
