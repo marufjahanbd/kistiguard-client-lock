@@ -1,14 +1,17 @@
 package com.kistiguard.dealer;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.CookieManager;
+import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -19,14 +22,18 @@ import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String TARGET_URL = "https://kistiguard.bartamanict.com/dealer";
     private static final int FILE_CHOOSER_REQUEST_CODE = 2001;
+    private static final int CAMERA_PERMISSION_REQUEST_CODE = 1001;
 
     private WebView webView;
     private SwipeRefreshLayout swipeRefresh;
@@ -35,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private Button btnRetry;
 
     private ValueCallback<Uri[]> filePathCallback;
+    private PermissionRequest pendingPermissionRequest;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -66,7 +74,16 @@ public class MainActivity extends AppCompatActivity {
         });
 
         initWebView();
+        checkAndRequestCameraPermission();
         webView.loadUrl(TARGET_URL);
+    }
+
+    private void checkAndRequestCameraPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA},
+                    CAMERA_PERMISSION_REQUEST_CODE);
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -83,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        settings.setMediaPlaybackRequiresUserGesture(false);
 
         // Session Cookie persistence across restarts
         CookieManager cookieManager = CookieManager.getInstance();
@@ -100,6 +118,26 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     progressBar.setVisibility(View.GONE);
                     swipeRefresh.setRefreshing(false);
+                }
+            }
+
+            // Camera / Microphone permission request from HTML5 (getUserMedia / html5-qrcode)
+            @Override
+            public void onPermissionRequest(final PermissionRequest request) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                                request.grant(request.getResources());
+                            } else {
+                                pendingPermissionRequest = request;
+                                ActivityCompat.requestPermissions(MainActivity.this,
+                                        new String[]{Manifest.permission.CAMERA},
+                                        CAMERA_PERMISSION_REQUEST_CODE);
+                            }
+                        }
+                    });
                 }
             }
 
@@ -170,6 +208,25 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && pendingPermissionRequest != null) {
+                    pendingPermissionRequest.grant(pendingPermissionRequest.getResources());
+                    pendingPermissionRequest = null;
+                }
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && pendingPermissionRequest != null) {
+                    pendingPermissionRequest.deny();
+                    pendingPermissionRequest = null;
+                }
+                Toast.makeText(this, "ক্যামেরা ব্যবহারের জন্য পারমিশন প্রয়োজন", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private boolean handleSpecialUrls(String url) {
